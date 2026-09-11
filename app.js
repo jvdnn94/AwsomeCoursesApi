@@ -5,12 +5,13 @@ const Logger = require("./middleware/logger");
 const morgan = require("morgan");
 const TestDeBug = require("debug")("testDeBugger");
 const app = express();
+app.use(cors());
 const CoursesRoutes = require("./routes/course-route");
 const HomeRoute=require("./routes/HomePage-route");
 const UserRoute=require("./routes/AuthRoutes");
 const UserCourseRoutes = require("./routes/userCourseroute");
 
-app.use(cors());
+
 app.use(express.json());
 app.use(Logger.Log2);
 app.use(express.urlencoded({ extended: true }));
