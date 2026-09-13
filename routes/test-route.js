@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const pool = require("../utilities/mysql-db");
+const pool = require("../utilities/db");
 
 router.get("/", async (req, res) => {
   try {

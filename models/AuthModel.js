@@ -1,68 +1,40 @@
 const pool = require("../utilities/mysql-db");
-const { v4: uuidv4 } = require("uuid");
 
-class UserModel {
-
- static InsertModel = async (name, email, password, role = 'user') => {
+class AuthModel {
+  static async GetUserByEmail(email) {
     try {
-      const userId = uuidv4();  // ⬅️ UUID در Node ساخته می‌شود
-      
-      const [result] = await pool.query(
-        `INSERT INTO users (id, name, email, password, role) 
-         VALUES (?, ?, ?, ?, ?)`,
-        [userId,name, email, password, role]
-      );
-      
-      return result.insertId;
-    } catch (error) {
-      console.error("Error in InsertModel:", error.message);
-      throw error;
+      const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+      return result.rows[0];
+    } catch (err) {
+      console.error("خطا در دریافت کاربر با ایمیل:", err.message);
+      throw err;
     }
-  };
+  }
 
-
-
-  static GetUserByEmail = async (email) => {
+  static async GetUserById(id) {
     try {
-      const [result] = await pool.query(
-        `SELECT id, name, email, role, created_at FROM users WHERE email = ?`,
-        [email]
-      );
-      return result[0];
-    } catch (error) {
-      console.error("Error in GetUserByEmail:", error.message);
-      throw error;
+      const result = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
+      return result.rows[0];
+    } catch (err) {
+      console.error("خطا در دریافت کاربر با آیدی:", err.message);
+      throw err;
     }
-  };
+  }
 
-   //   گرفتن کاربر با پسورد (برای لاگین)
-  static GetUserByEmailWithPassword = async (email) => {
+  static async CreateUser(name, email, hashedPassword, role = 'user') {
     try {
-      const [result] = await pool.query(
-        `SELECT * FROM users WHERE email = ?`,
-        [email]
+      const result = await pool.query(
+        `INSERT INTO users (name, email, password, role) 
+         VALUES ($1, $2, $3, $4) 
+         RETURNING id, name, email, role, created_at`,
+        [name, email, hashedPassword, role]
       );
-      return result[0];
-    } catch (error) {
-      console.error("Error in GetUserByEmailWithPassword:", error.message);
-      throw error;
+      return result.rows[0];
+    } catch (err) {
+      console.error("خطا در ایجاد کاربر:", err.message);
+      throw err;
     }
-  };
-
-  static GetUserById = async (id) => {
-    try {
-      const [result] = await pool.query(
-        `SELECT id, name, email, role, created_at FROM users WHERE id = ?`,
-        [id]
-      );
-      return result[0];
-    } catch (error) {
-      console.error("Error in GetUserById:", error.message);
-      throw error;
-    }
-  };
-
+  }
 }
 
-
-module.exports = UserModel;
+module.exports = AuthModel;

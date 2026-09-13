@@ -1,98 +1,83 @@
-const pool = require("../utilities/mysql-db");
+const pool = require("../utilities/mysql-db"); // یا "../utilities/db" اگر نامش را عوض کردی
 
 class CourseModel {
-  // تست اتصال
-
-  static testConnection = async () => {
-    let connection;
+  static async GetCourses() {
     try {
-      connection = await pool.getConnection();
-      console.log("✅ با موفقیت به دیتابیس وصل شد");
+      const result = await pool.query('SELECT id, "Title", created_at FROM courses ORDER BY id');
+      return result.rows;
     } catch (err) {
-      console.error("❌ خطا در اتصال:", err.message);
-    } finally {
-      if (connection) connection.release();
+      console.error("خطا در دریافت دوره‌ها:", err.message);
+      throw err;
     }
-  };
+  }
 
-  //این یکی  مثل پایینی است فقط شکل انتخاب  نتیجه متفاوت است    حالت 1
-  // const GetCourses = async () => {
-  //   try {
-  //     const res = await pool.query(
-  //       "SELECT * FROM courses",
-  //     );
-  //     console.log(res[0]);
-
-  //   } catch {
-  //     console.error("خطا در دریافت اطلاعات");
-  //   }
-  // };
-
-  //این یکی  مثل پایینی است فقط شکل انتخاب  نتیجه متفاوت است    حالت 2
-  //در این حالت فقط آرایه دیتا دریافت نمیشود و کل اطلاغات مربوط به دیتا و جدول هم دریافت میشود
-  // const GetCourses = async () => {
-  //   try {
-  //     const res = await pool.query(
-  //       "SELECT * FROM courses",
-  //     );
-  //     console.log(res);
-
-  //   } catch {
-  //     console.error("خطا در دریافت اطلاعات");
-  //   }
-  // };
-
-  static GetCourses = async () => {
+  static async GetCourse(id) {
     try {
-      const [res] = await pool.query("SELECT * FROM courses");
-      return res;
-    } catch {
-      console.error("خطا در دریافت اطلاعات");
+      const result = await pool.query('SELECT id, "Title", created_at FROM courses WHERE id = $1', [id]);
+      return result.rows[0];
+    } catch (err) {
+      console.error("خطا در دریافت دوره:", err.message);
+      throw err;
     }
-  };
+  }
 
-  static GetCourse = async (id) => {
+  static async InsertCourse(Title) {
     try {
-      const [res] = await pool.query(`SELECT * FROM courses where id=?`, [id]);
-      return res[0];
-    } catch {
-      console.error("خطا در دریافت اطلاعات");
+      // RETURNING * باعث می‌شود ردیف جدید ساخته شده را برگرداند
+      const result = await pool.query(
+        'INSERT INTO courses ("Title") VALUES ($1) RETURNING id, "Title", created_at',
+        [Title]
+      );
+      return result.rows[0];
+    } catch (err) {
+      console.error("خطا در ایجاد دوره:", err.message);
+      throw err;
     }
-  };
+  }
 
-  static InsertCourse = async (Title) => {
-    const [result] = await pool.query(
-      `INSERT INTO courses (Title) VALUES (?)`,
-      [Title],
-    );
-    return await CourseModel.GetCourse(result.insertId);
-  };
+  static async UpdateCourse(id, Title) {
+    try {
+      const result = await pool.query(
+        'UPDATE courses SET "Title" = $1 WHERE id = $2 RETURNING id, "Title", created_at',
+        [Title, id]
+      );
+      return result.rows[0];
+    } catch (err) {
+      console.error("خطا در آپدیت دوره:", err.message);
+      throw err;
+    }
+  }
 
-  static UpdateCourse = async (id, Title) => {
-    const [result] = await pool.query(`update courses set Title=? where id=?`, [
-      Title,
-      id,
-    ]);
-    return CourseModel.GetCourse(id);
-  };
+  static async DeleteCourse(id) {
+    try {
+      const result = await pool.query('DELETE FROM courses WHERE id = $1', [id]);
+      return { deleted: result.rowCount };
+    } catch (err) {
+      console.error("خطا در حذف دوره:", err.message);
+      throw err;
+    }
+  }
 
-  static DeleteCourse = async (id) => {
-    const [result] = await pool.query(`DELETE FROM courses WHERE id = ?`, [id]);
-    return result;
-  };
-  static GetCoursesWithEnrollment = async (userId) => {
-    const [courses] = await pool.query(
-      `SELECT 
-      c.id,
-      c.Title,
-      CASE WHEN uc.id IS NOT NULL THEN TRUE ELSE FALSE END AS is_enrolled,
-      uc.status,
-      uc.progress_percentage
-    FROM courses c
-    LEFT JOIN user_courses uc ON c.id = uc.course_id AND uc.user_id = ?`,
-      [userId],
-    );
-    return courses;
-  };
+  static async GetCoursesWithEnrollment(userId) {
+    try {
+      const result = await pool.query(
+        `SELECT 
+          c.id,
+          c."Title" AS "Title",
+          CASE WHEN uc.id IS NOT NULL THEN TRUE ELSE FALSE END AS is_enrolled,
+          uc.status,
+          uc.progress_percentage
+        FROM courses c
+        LEFT JOIN user_courses uc ON c.id = uc.course_id AND uc.user_id = $1
+        ORDER BY c.id`,
+        [userId]
+      );
+      return result.rows;
+    } catch (err) {
+      console.error("خطا در دریافت دوره‌های کاربر:", err.message);
+      throw err;
+    }
+  }
 }
+
 module.exports = CourseModel;
