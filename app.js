@@ -1,4 +1,5 @@
 const express = require("express");
+console.log("🚀 THIS IS THE NEW POSTGRES VERSION!");
 const cors = require("cors");
 require("dotenv").config();
 const Logger = require("./middleware/logger");
