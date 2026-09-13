@@ -9,6 +9,7 @@ app.use(cors());
 const CoursesRoutes = require("./routes/course-route");
 const HomeRoute=require("./routes/HomePage-route");
 const UserRoute=require("./routes/AuthRoutes");
+const TestRoute = require("./routes/test-route");
 const UserCourseRoutes = require("./routes/userCourseroute");
 
 
@@ -23,6 +24,7 @@ app.use("/",HomeRoute)
 app.use("/api/courses", CoursesRoutes);
 app.use("/api/users", UserRoute);
 app.use("/api/users/courses", UserCourseRoutes);
+app.use("/api/test", TestRoute);
 
 
 const port = process.env.PORT || process.env.APP_PORT || 3000;
