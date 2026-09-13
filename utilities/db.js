@@ -7,11 +7,16 @@ const pool = new Pool({
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
+  
   // تنظیمات SSL برای اتصال امن به Supabase در محیط Production (Render)
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-  max: 20, // حداکثر تعداد کانکشن‌ها
+  
+  // ⬇️  ! مستقیماً به سوکت می‌گوید فقط از IPv4 استفاده کند
+  family: 4, 
+  
+  max: 20,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  connectionTimeoutMillis: 5000,
 });
 
 // تست اتصال هنگام شروع برنامه
