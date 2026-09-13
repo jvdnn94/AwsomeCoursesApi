@@ -1,4 +1,4 @@
-const pool = require("../utilities/mysql-db"); // یا "../utilities/db" اگر نامش را عوض کردی
+const pool = require("../utilities/db"); // یا "../utilities/db" اگر نامش را عوض کردی
 
 class CourseModel {
   static async GetCourses() {

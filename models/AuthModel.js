@@ -1,4 +1,4 @@
-const pool = require("../utilities/mysql-db");
+const pool = require("../utilities/db");
 
 class AuthModel {
   static async GetUserByEmail(email) {

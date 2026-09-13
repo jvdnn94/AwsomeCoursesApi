@@ -1,4 +1,4 @@
-const pool = require("../utilities/mysql-db");
+const pool = require("../utilities/db");
 
 class UserCourseModel {
   static async EnrollUser(userId, courseId) {
