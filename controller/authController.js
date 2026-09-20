@@ -33,17 +33,15 @@ const RegisterUser = async (req, res, next) => {
 
   const HashPass = await Bcrypt.hash(Validateresult.value.password, 10);
 
-  const UserId = await UserModel.InsertModel(
-    Validateresult.value.name,
-    Validateresult.value.email,
-    HashPass,
+  const NewUser = await UserModel.GetUserByEmail(Validateresult.value.email);
+
+  const token = jwt.sign(
+    { id: NewUser.id, role: NewUser.role },
+    process.env.SECRET_KEY,
+    {
+      expiresIn: process.env.JWT_EXPIRES_IN || "7d",
+    },
   );
-
-    const NewUser = await UserModel.GetUserByEmail(Validateresult.value.email);
-
-  const token = jwt.sign({ id: NewUser.id,role: NewUser.role }, process.env.SECRET_KEY, {
-    expiresIn: process.env.JWT_EXPIRES_IN || "7d",
-  });
 
   res.header("Authorization", token).send({
     user: {
@@ -75,30 +73,33 @@ const LoginUser = async (req, res, next) => {
   const User = await UserModel.GetUserByEmail(Validateresult.value.email);
   if (!User) return res.status(400).send("email or password is invalid!");
 
-  
-
   const ValidatePass = await Bcrypt.compare(
     Validateresult.value.password,
     User.password,
   );
   if (!ValidatePass)
     return res.status(400).send("email or password is invalid!");
-  const token = jwt.sign({ id: User.id,role: User.role }, process.env.SECRET_KEY, {
-    expiresIn: process.env.JWT_EXPIRES_IN || "7d",
-  });
+  const token = jwt.sign(
+    { id: User.id, role: User.role },
+    process.env.SECRET_KEY,
+    {
+      expiresIn: process.env.JWT_EXPIRES_IN || "7d",
+    },
+  );
+
+  // eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImJkYWIxNzkzLWU0YTUtNDYyNC05ZWQ0LWQ0MjI0N2I5NzgyMCIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc4OTg1ODYxMCwiZXhwIjoxNzkwNDYzNDEwfQ.LgrW28pIUGAd8gj-ID57SKPSrAiYg2JkTwBhJ0WznSM
 
   res.header("Authorization", token).send({
     user: _.pick(User, ["id", "name", "email"]),
     token: token,
   });
-  
 };
 
 const LogoutUser = (req, res) => {
   // در JWT stateless، خروج واقعی نیاز به token blacklist دارد
   // ولی برای سادگی، فقط به کلاینت می‌گوییم توکن را پاک کند
-  res.send({ 
-    message: "خروج با موفقیت انجام شد. لطفاً توکن را از سمت کلاینت پاک کنید." 
+  res.send({
+    message: "خروج با موفقیت انجام شد. لطفاً توکن را از سمت کلاینت پاک کنید.",
   });
 };
 module.exports = { RegisterUser, LoginUser, LogoutUser };
