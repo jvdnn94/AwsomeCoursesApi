@@ -18,6 +18,9 @@ const connectionString = `postgresql://${dbUser}:${dbPassword}@${dbHost}:${dbPor
 
 const pool = new Pool({
   connectionString: connectionString,
+  ssl: {
+    rejectUnauthorized: false
+  },
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000,
