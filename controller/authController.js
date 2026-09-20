@@ -72,7 +72,7 @@ const LoginUser = async (req, res, next) => {
   if (Validateresult.error)
     return res.status(400).send(Validateresult.error.details[0].message);
 
-  const User = await UserModel.GetUserByEmailWithPassword(Validateresult.value.email);
+  const User = await UserModel.GetUserByEmail(Validateresult.value.email);
   if (!User) return res.status(400).send("email or password is invalid!");
 
   const ValidatePass = await Bcrypt.compare(
