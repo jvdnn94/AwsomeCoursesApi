@@ -1,18 +1,19 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
-console.log("========================================");
-console.log("🔍 DB_USER value:", JSON.stringify(process.env.DB_USER));
-console.log("🔍 DB_HOST value:", process.env.DB_HOST);
-console.log("🔍 DB_PORT value:", process.env.DB_PORT);
-console.log("========================================");
+const dbUser = (process.env.DB_USER || '').trim();
+const dbHost = (process.env.DB_HOST || '').trim();
+const dbPort = parseInt((process.env.DB_PORT || '6543').trim(), 10);
+const dbPassword = (process.env.DB_PASSWORD || '').trim();
+const dbDatabase = (process.env.DB_DATABASE || 'postgres').trim();
+
 
 const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT || 5432,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_DATABASE,
+ host: dbHost,
+  port: dbPort,
+  user: dbUser,
+  password: dbPassword,
+  database: dbDatabase,
   
   // تنظیمات SSL برای اتصال امن به Supabase در محیط Production (Render)
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
