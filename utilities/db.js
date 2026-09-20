@@ -7,6 +7,12 @@ const dbPort = parseInt((process.env.DB_PORT || '6543').trim(), 10);
 const dbPassword = (process.env.DB_PASSWORD || '').trim();
 const dbDatabase = (process.env.DB_DATABASE || 'postgres').trim();
 
+console.log("========================================");
+console.log("🔍 DB_USER:", JSON.stringify(dbUser), "| Length:", dbUser.length);
+console.log("🔍 DB_HOST:", dbHost);
+console.log("🔍 DB_PORT:", dbPort);
+console.log("========================================");
+
 
 const pool = new Pool({
  host: dbHost,
