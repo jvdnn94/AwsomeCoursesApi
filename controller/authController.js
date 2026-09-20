@@ -95,8 +95,6 @@ const LoginUser = async (req, res, next) => {
     },
   );
 
-  // eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImJkYWIxNzkzLWU0YTUtNDYyNC05ZWQ0LWQ0MjI0N2I5NzgyMCIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc4OTg1ODYxMCwiZXhwIjoxNzkwNDYzNDEwfQ.LgrW28pIUGAd8gj-ID57SKPSrAiYg2JkTwBhJ0WznSM
-
   res.header("Authorization", token).send({
     user: _.pick(User, ["id", "name", "email"]),
     token: token,
