@@ -15,39 +15,47 @@ const RegisterUser = async (req, res, next) => {
       "string.base": "مقدار ایمیل باید از نوع متن (string) باشد.",
     }),
     password: Joi.string().min(3).max(50).required().messages({
-      "string.min": "Pass must be at least 3 characters",
+      "string.min": "رمز عبور باید حداقل ۳ کاراکتر باشد",
     }),
   };
 
   const Validateresult = Joi.object(schema).validate(req.body);
 
-  if (Validateresult.error)
+  if (Validateresult.error) {
     return res.status(400).send(Validateresult.error.details[0].message);
+  }
 
-  const ValidateUserExist = await UserModel.GetUserByEmail(
-    Validateresult.value.email,
-  );
-
-  if (ValidateUserExist)
+  const ValidateUserExist = await UserModel.GetUserByEmail(Validateresult.value.email);
+  if (ValidateUserExist) {
     return res.status(400).send("A user by this email already exists!!!");
+  }
 
   const HashPass = await Bcrypt.hash(Validateresult.value.password, 10);
 
-  const NewUser = await UserModel.GetUserByEmail(Validateresult.value.email);
-
-  const token = jwt.sign(
-    { id: NewUser.id, role: NewUser.role },
-    process.env.SECRET_KEY,
-    {
-      expiresIn: process.env.JWT_EXPIRES_IN || "7d",
-    },
+  // فراخوانی تابع ساخت کاربر
+  const NewUser = await UserModel.CreateUser(
+    Validateresult.value.name,
+    Validateresult.value.email,
+    HashPass
   );
 
-  res.header("Authorization", token).send({
+  // ⬇️ چک ایمنی: اگر NewUser تعریف نشده بود، جلوی کرش را بگیر
+  if (!NewUser || !NewUser.id) {
+    console.error("❌ NewUser is undefined or missing id after creation!");
+    return res.status(500).send("خطای داخلی در ایجاد کاربر در دیتابیس");
+  }
+
+  const token = jwt.sign(
+    { id: NewUser.id, role: NewUser.role }, 
+    process.env.SECRET_KEY, 
+    { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
+  );
+
+  res.header("Authorization", token).status(201).send({
     user: {
       id: NewUser.id,
-      name: Validateresult.value.name,
-      email: Validateresult.value.email,
+      name: NewUser.name,
+      email: NewUser.email,
     },
     token: token,
   });
