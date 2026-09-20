@@ -7,11 +7,6 @@ const dbHost = (process.env.DB_HOST || '').trim();
 const dbPort = parseInt((process.env.DB_PORT || '6543').trim(), 10);
 const dbDatabase = (process.env.DB_DATABASE || 'postgres').trim();
 
-console.log("========================================");
-console.log("🔍 DB_USER:", JSON.stringify(dbUser));
-console.log("🔍 DB_HOST:", dbHost);
-console.log("🔍 DB_PORT:", dbPort);
-console.log("========================================");
 
 // ۲. ساخت رشته اتصال کاملاً تمیز (بدون هیچ ?sslmode در انتها!)
 // encodeURIComponent برای رمزهای عبوری که کاراکتر خاص دارند حیاتی است
