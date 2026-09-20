@@ -39,11 +39,15 @@ const RegisterUser = async (req, res, next) => {
     HashPass,
   );
 
-    const NewUser = await UserModel.GetUserByEmail(Validateresult.value.email);
+  const NewUser = await UserModel.GetUserByEmail(Validateresult.value.email);
 
-  const token = jwt.sign({ id: NewUser.id,role: NewUser.role }, process.env.SECRET_KEY, {
-    expiresIn: process.env.JWT_EXPIRES_IN || "7d",
-  });
+  const token = jwt.sign(
+    { id: NewUser.id, role: NewUser.role },
+    process.env.SECRET_KEY,
+    {
+      expiresIn: process.env.JWT_EXPIRES_IN || "7d",
+    },
+  );
 
   res.header("Authorization", token).send({
     user: {
@@ -75,28 +79,40 @@ const LoginUser = async (req, res, next) => {
   const User = await UserModel.GetUserByEmail(Validateresult.value.email);
   if (!User) return res.status(400).send("email or password is invalid!");
 
+  console.log(
+    "🔍 رمز دریافتی از درخواست:",
+    JSON.stringify(Validateresult.value.password),
+  );
+  console.log("🔍 رمز خوانده شده از دیتابیس:", JSON.stringify(User.password));
+
   const ValidatePass = await Bcrypt.compare(
     Validateresult.value.password,
     User.password,
   );
+
+    console.log("🔍 نتیجه مقایسه Bcrypt:", ValidatePass);
+    
   if (!ValidatePass)
     return res.status(400).send("email or password is invalid!");
-  const token = jwt.sign({ id: User.id,role: User.role }, process.env.SECRET_KEY, {
-    expiresIn: process.env.JWT_EXPIRES_IN || "7d",
-  });
+  const token = jwt.sign(
+    { id: User.id, role: User.role },
+    process.env.SECRET_KEY,
+    {
+      expiresIn: process.env.JWT_EXPIRES_IN || "7d",
+    },
+  );
 
   res.header("Authorization", token).send({
     user: _.pick(User, ["id", "name", "email"]),
     token: token,
   });
-  
 };
 
 const LogoutUser = (req, res) => {
   // در JWT stateless، خروج واقعی نیاز به token blacklist دارد
   // ولی برای سادگی، فقط به کلاینت می‌گوییم توکن را پاک کند
-  res.send({ 
-    message: "خروج با موفقیت انجام شد. لطفاً توکن را از سمت کلاینت پاک کنید." 
+  res.send({
+    message: "خروج با موفقیت انجام شد. لطفاً توکن را از سمت کلاینت پاک کنید.",
   });
 };
 module.exports = { RegisterUser, LoginUser, LogoutUser };
