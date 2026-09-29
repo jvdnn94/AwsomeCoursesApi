@@ -1,5 +1,6 @@
 const UserModel = require("../models/AuthModel");
 const Joi = require("joi");
+const _ = require("lodash");
 const Bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
@@ -47,12 +48,8 @@ const RegisterUser = async (req, res, next) => {
   );
 
   res.header("Authorization", token).status(201).send({
-    user: {
-      id: NewUser.id,
-      name: NewUser.name,
-      email: NewUser.email,
-      role: NewUser.role || "user", // ✅ ارسال نقش کاربر
-    },
+    // ✅ استفاده از _.pick و اضافه کردن role به لیست
+    user: _.pick(NewUser, ["id", "name", "email", "role"]),
     token: token,
   });
 };
@@ -68,7 +65,7 @@ const LoginUser = async (req, res, next) => {
     }),
   };
   
-  // ✅ تعریف متغیر با نام یکسان و استاندارد
+  // ✅ متغیر با نام یکسان و استاندارد (رفع خطای ReferenceError)
   const validationResult = Joi.object(schema).validate(req.body);
 
   if (validationResult.error) {
@@ -91,13 +88,8 @@ const LoginUser = async (req, res, next) => {
   );
 
   res.header("Authorization", token).send({
-    // ✅ حذف _.pick و ارسال دستی فیلدها برای اطمینان از وجود role
-    user: {
-      id: User.id,
-      name: User.name,
-      email: User.email,
-      role: User.role || "user", // ✅ این خط کلید حل مشکل ادمین است
-    },
+    // ✅ استفاده از _.pick و اضافه کردن "role" به لیست فیلدهای مجاز
+    user: _.pick(User, ["id", "name", "email", "role"]),
     token: token,
   });
 };
