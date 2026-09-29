@@ -1,6 +1,5 @@
 const UserModel = require("../models/AuthModel");
 const Joi = require("joi");
-const _ = require("lodash");
 const Bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
@@ -11,35 +10,31 @@ const RegisterUser = async (req, res, next) => {
     email: Joi.string().email().required().messages({
       "string.email": "فرمت ایمیل وارد شده معتبر نیست.",
       "any.required": "وارد کردن ایمیل الزامی است.",
-      "string.empty": "ایمیل نمی‌تواند خالی باشد.",
-      "string.base": "مقدار ایمیل باید از نوع متن (string) باشد.",
     }),
     password: Joi.string().min(3).max(50).required().messages({
       "string.min": "رمز عبور باید حداقل ۳ کاراکتر باشد",
     }),
   };
 
-  const Validateresult = Joi.object(schema).validate(req.body);
+  const validationResult = Joi.object(schema).validate(req.body);
 
-  if (Validateresult.error) {
-    return res.status(400).send(Validateresult.error.details[0].message);
+  if (validationResult.error) {
+    return res.status(400).send(validationResult.error.details[0].message);
   }
 
-  const ValidateUserExist = await UserModel.GetUserByEmail(Validateresult.value.email);
+  const ValidateUserExist = await UserModel.GetUserByEmail(validationResult.value.email);
   if (ValidateUserExist) {
-    return res.status(400).send("A user by this email already exists!!!");
+    return res.status(400).send("کاربری با این ایمیل قبلاً ثبت‌نام کرده است.");
   }
 
-  const HashPass = await Bcrypt.hash(Validateresult.value.password, 10);
+  const HashPass = await Bcrypt.hash(validationResult.value.password, 10);
 
-  // فراخوانی تابع ساخت کاربر
   const NewUser = await UserModel.CreateUser(
-    Validateresult.value.name,
-    Validateresult.value.email,
+    validationResult.value.name,
+    validationResult.value.email,
     HashPass
   );
 
-  // ⬇️ چک ایمنی: اگر NewUser تعریف نشده بود، جلوی کرش را بگیر
   if (!NewUser || !NewUser.id) {
     console.error("❌ NewUser is undefined or missing id after creation!");
     return res.status(500).send("خطای داخلی در ایجاد کاربر در دیتابیس");
@@ -56,6 +51,7 @@ const RegisterUser = async (req, res, next) => {
       id: NewUser.id,
       name: NewUser.name,
       email: NewUser.email,
+      role: NewUser.role || "user", // ✅ ارسال نقش کاربر
     },
     token: token,
   });
@@ -66,46 +62,50 @@ const LoginUser = async (req, res, next) => {
     email: Joi.string().email().required().messages({
       "string.email": "فرمت ایمیل وارد شده معتبر نیست.",
       "any.required": "وارد کردن ایمیل الزامی است.",
-      "string.empty": "ایمیل نمی‌تواند خالی باشد.",
-      "string.base": "مقدار ایمیل باید از نوع متن (string) باشد.",
     }),
     password: Joi.string().min(3).max(50).required().messages({
-      "string.min": "Pass must be at least 3 characters",
+      "string.min": "رمز عبور باید حداقل ۳ کاراکتر باشد",
     }),
   };
-  const Validateresult = Joi.object(schema).validate(req.body);
+  
+  // ✅ تعریف متغیر با نام یکسان و استاندارد
+  const validationResult = Joi.object(schema).validate(req.body);
 
-  if (Validateresult.error)
-    return res.status(400).send(Validateresult.error.details[0].message);
+  if (validationResult.error) {
+    return res.status(400).send(validationResult.error.details[0].message);
+  }
 
-  const User = await UserModel.GetUserByEmail(Validateresult.value.email);
-  if (!User) return res.status(400).send("email or password is invalid!");
+  const User = await UserModel.GetUserByEmail(validationResult.value.email);
+  if (!User) return res.status(400).send("ایمیل یا رمز عبور نامعتبر است!");
 
   const ValidatePass = await Bcrypt.compare(
-    Validateresult.value.password,
+    validationResult.value.password,
     User.password,
   );
-  if (!ValidatePass)
-    return res.status(400).send("email or password is invalid!");
+  if (!ValidatePass) return res.status(400).send("ایمیل یا رمز عبور نامعتبر است!");
+  
   const token = jwt.sign(
     { id: User.id, role: User.role },
     process.env.SECRET_KEY,
-    {
-      expiresIn: process.env.JWT_EXPIRES_IN || "7d",
-    },
+    { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
   );
 
   res.header("Authorization", token).send({
-    user: _.pick(User, ["id", "name", "email"]),
+    // ✅ حذف _.pick و ارسال دستی فیلدها برای اطمینان از وجود role
+    user: {
+      id: User.id,
+      name: User.name,
+      email: User.email,
+      role: User.role || "user", // ✅ این خط کلید حل مشکل ادمین است
+    },
     token: token,
   });
 };
 
 const LogoutUser = (req, res) => {
-  // در JWT stateless، خروج واقعی نیاز به token blacklist دارد
-  // ولی برای سادگی، فقط به کلاینت می‌گوییم توکن را پاک کند
   res.send({
     message: "خروج با موفقیت انجام شد. لطفاً توکن را از سمت کلاینت پاک کنید.",
   });
 };
+
 module.exports = { RegisterUser, LoginUser, LogoutUser };
