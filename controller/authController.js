@@ -6,14 +6,40 @@ const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
 const RegisterUser = async (req, res, next) => {
-  // ... (بخش اعتبارسنجی Joi بدون تغییر) ...
+  const schema = {
+    name: Joi.string().min(3).max(50).required(),
+    email: Joi.string().email().required().messages({
+      "string.email": "فرمت ایمیل وارد شده معتبر نیست.",
+      "any.required": "وارد کردن ایمیل الزامی است.",
+      "string.empty": "ایمیل نمی‌تواند خالی باشد.",
+      "string.base": "مقدار ایمیل باید از نوع متن (string) باشد.",
+    }),
+    password: Joi.string().min(3).max(50).required().messages({
+      "string.min": "رمز عبور باید حداقل ۳ کاراکتر باشد",
+    }),
+  };
 
+  const Validateresult = Joi.object(schema).validate(req.body);
+
+  if (Validateresult.error) {
+    return res.status(400).send(Validateresult.error.details[0].message);
+  }
+
+  const ValidateUserExist = await UserModel.GetUserByEmail(Validateresult.value.email);
+  if (ValidateUserExist) {
+    return res.status(400).send("A user by this email already exists!!!");
+  }
+
+  const HashPass = await Bcrypt.hash(Validateresult.value.password, 10);
+
+  // فراخوانی تابع ساخت کاربر
   const NewUser = await UserModel.CreateUser(
     Validateresult.value.name,
     Validateresult.value.email,
     HashPass
   );
 
+  // ⬇️ چک ایمنی: اگر NewUser تعریف نشده بود، جلوی کرش را بگیر
   if (!NewUser || !NewUser.id) {
     console.error("❌ NewUser is undefined or missing id after creation!");
     return res.status(500).send("خطای داخلی در ایجاد کاربر در دیتابیس");
@@ -30,14 +56,27 @@ const RegisterUser = async (req, res, next) => {
       id: NewUser.id,
       name: NewUser.name,
       email: NewUser.email,
-      role: NewUser.role 
     },
     token: token,
   });
 };
 
 const LoginUser = async (req, res, next) => {
-  // ... (بخش اعتبارسنجی Joi بدون تغییر) ...
+  const schema = {
+    email: Joi.string().email().required().messages({
+      "string.email": "فرمت ایمیل وارد شده معتبر نیست.",
+      "any.required": "وارد کردن ایمیل الزامی است.",
+      "string.empty": "ایمیل نمی‌تواند خالی باشد.",
+      "string.base": "مقدار ایمیل باید از نوع متن (string) باشد.",
+    }),
+    password: Joi.string().min(3).max(50).required().messages({
+      "string.min": "Pass must be at least 3 characters",
+    }),
+  };
+  const Validateresult = Joi.object(schema).validate(req.body);
+
+  if (Validateresult.error)
+    return res.status(400).send(Validateresult.error.details[0].message);
 
   const User = await UserModel.GetUserByEmail(Validateresult.value.email);
   if (!User) return res.status(400).send("email or password is invalid!");
@@ -48,7 +87,6 @@ const LoginUser = async (req, res, next) => {
   );
   if (!ValidatePass)
     return res.status(400).send("email or password is invalid!");
-    
   const token = jwt.sign(
     { id: User.id, role: User.role },
     process.env.SECRET_KEY,
@@ -58,11 +96,10 @@ const LoginUser = async (req, res, next) => {
   );
 
   res.header("Authorization", token).send({
-    user: _.pick(User, ["id", "name", "email", "role"]), 
+    user: _.pick(User, ["id", "name", "email"]),
     token: token,
   });
 };
-
 
 const LogoutUser = (req, res) => {
   // در JWT stateless، خروج واقعی نیاز به token blacklist دارد
